@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Science explorer - ফ্রি এক্সেস রেজিস্ট্রেশন</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Hind Siliguri (Bengali) -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; }
+        .hud-grid {
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(0, 242, 254, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+        }
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(1000%); }
+        }
+        .animate-scan {
+            animation: scan 8s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between relative overflow-x-hidden selection:bg-cyan-500 selection:text-slate-950">
+
+    <!-- ক্যানভাস অ্যানিমেটেড গ্রিড -->
+    <canvas id="bgCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-40"></canvas>
+
+    <!-- সাই-ফাই গ্রিড ব্যাকগ্রাউন্ড -->
+    <div class="fixed inset-0 hud-grid pointer-events-none z-0"></div>
+
+    <!-- টপ-রাইট সিক্রেট অ্যাডমিন ডট -->
+    <div class="fixed top-4 right-4 z-50">
+        <button onclick="openAdminAuth()" class="relative group p-2 focus:outline-none" title="অ্যাডমিন প্যানেল">
+            <span class="absolute inline-flex h-3 w-3 rounded-full bg-red-500 opacity-75 animate-ping"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow-lg shadow-red-500/50"></span>
+        </button>
+    </div>
+
+    <!-- মূল ফন্টএন্ড কন্টেইনার -->
+    <main class="flex-grow flex items-center justify-center px-4 py-12 relative z-10">
+        <div class="max-w-md w-full bg-slate-900/80 backdrop-blur-2xl border border-cyan-500/30 rounded-3xl p-8 shadow-2xl shadow-cyan-500/10 relative overflow-hidden">
+            
+            <!-- লেজার স্ক্যানার লাইন -->
+            <div class="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-30 animate-scan pointer-events-none"></div>
+
+            <!-- হেডার সেকশন -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-semibold rounded-full mb-3 tracking-wider">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    KNWeb
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight text-white mb-2">3D Science Explorer</h1>
+                <p class="text-slate-400 text-sm">হাতের ইশারায় বিজ্ঞানের বিষয়াবলী ঘুরে দেখার ফ্রি এক্সেস পাস। ডেভেলপ করেছেন <span class="text-cyan-400 font-medium">কাজিম নাহইয়ান</span>।</p>
+            </div>
+
+            <!-- রেজিস্ট্রেশন ফর্ম -->
+            <form id="registrationForm" class="space-y-5">
+                <!-- নাম -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">তোমার নাম</label>
+                    <input type="text" id="fullName" required placeholder="তোমার পুরো নাম লেখো" 
+                        class="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm">
+                </div>
+
+                <!-- কলেজ নির্বাচন -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">কলেজের নাম</label>
+                    <select id="collegeName" required onchange="autoSelectGender()" 
+                        class="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm">
+                        <option value="" disabled selected>তোমার কলেজ সিলেক্ট করো</option>
+                        <option value="Notre Dame College" class="bg-slate-900">নটর ডেম কলেজ (Notre Dame College)</option>
+                        <option value="St. Joseph Higher Secondary School" class="bg-slate-900">সেন্ট যোসেফ উচ্চ মাধ্যমিক বিদ্যালয় (St. Joseph)</option>
+                        <option value="Holy Cross College" class="bg-slate-900">হোলি ক্রস কলেজ (Holy Cross College)</option>
+                    </select>
+                </div>
+
+                <!-- হোয়াটসঅ্যাপ নম্বর -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Whatsapp নম্বর (11 ডিজিট)</label>
+                    <input type="tel" id="whatsapp" required placeholder="01XXXXXXXXX" maxlength="11" pattern="^01[3-9][0-9]{8}$"
+                        class="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm">
+                    <p id="phoneError" class="text-red-400 text-xs mt-1 hidden">১১ ডিজিটের সঠিক নম্বর দাও (যেমন: 017XXXXXXXX)</p>
+                </div>
+
+                <!-- জেন্ডার (কলেজ অনুযায়ী অটো সিলেক্ট হবে) -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">জেন্ডার (লিঙ্গ)</label>
+                    <select id="gender" required 
+                        class="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-sm">
+                        <option value="" disabled selected>কলেজ সিলেক্ট করলে অটো আসবে</option>
+                        <option value="Male" class="bg-slate-900">ছাত্র (Male)</option>
+                        <option value="Female" class="bg-slate-900">ছাত্রী (Female)</option>
+                    </select>
+                </div>
+
+                <!-- সাবমিট বাটন -->
+                <button type="submit" id="submitBtn" 
+                    class="w-full bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all duration-200 text-sm mt-2">
+                    ফ্রি এক্সেস সংগ্রহ করো
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- সাফল্যের বার্তা পপআপ (Modal) -->
+    <div id="successModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-cyan-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4 relative overflow-hidden">
+            <div class="w-14 h-14 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+                ✓
+            </div>
+            <h3 class="text-xl font-bold text-white">রেজিস্ট্রেশন সফল হয়েছে!</h3>
+            <div id="modalGreetingText" class="text-slate-300 text-sm leading-relaxed bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-left space-y-2">
+                <!-- কাজিম ভাইয়ের বার্তা -->
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-3 rounded-xl transition-colors text-sm border border-slate-700">
+                ঠিক আছে, ধন্যবাদ!
+            </button>
+        </div>
+    </div>
+
+    <!-- অ্যাডমিন লগইন / ডাটা ভিউয়ার পপআপ -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-red-500/30 rounded-3xl p-6 max-w-3xl w-full shadow-2xl max-h-[85vh] flex flex-col">
+            
+            <!-- অ্যাডমিন পাসওয়ার্ড ভিউ -->
+            <div id="adminAuthView" class="space-y-4 max-w-sm mx-auto w-full text-center py-6">
+                <div class="w-12 h-12 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                    🔒
+                </div>
+                <h3 class="text-lg font-bold text-white">অ্যাডমিন প্রবেশাধিকার</h3>
+                <input type="password" id="adminPassword" placeholder="পাসওয়ার্ড দিন" 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-slate-100 focus:outline-none focus:border-red-500">
+                <div class="flex gap-2">
+                    <button onclick="closeAdminModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-sm">বাতিল</button>
+                    <button onclick="verifyAdmin()" class="w-1/2 bg-red-600 hover:bg-red-500 text-white font-medium py-2.5 rounded-xl text-sm">প্রবেশ করুন</button>
+                </div>
+            </div>
+
+            <!-- রেজিস্টার্ড তালিকা ভিউ -->
+            <div id="adminDataView" class="hidden flex-col h-full space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        রেজিস্টার্ড ইউজার তালিকা (<span id="userCount">0</span>)
+                    </h3>
+                    <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-xl px-2">&times;</button>
+                </div>
+                <div class="overflow-y-auto flex-grow rounded-xl border border-slate-800 bg-slate-950/60">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 uppercase text-slate-400 sticky top-0 border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">নাম</th>
+                                <th class="p-3">কলেজ</th>
+                                <th class="p-3">হোয়াটসঅ্যাপ</th>
+                                <th class="p-3">জেন্ডার</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-slate-800/50">
+                            <!-- ডাটা আসবে -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ফুটার -->
+    <footer class="py-6 text-center text-xs text-slate-500 relative z-10 border-t border-slate-900">
+        <p>সর্বস্বত্ব সংরক্ষিত &bull; কারিগরি পরিচালনায় <span class="text-slate-400 font-medium">কাজিম নাহইয়ান</span></p>
+    </footer>
+
+    <!-- সুপাবেজ কানেকশন ও লজিক স্ক্রিপ্ট -->
+    <script>
+        // মূল Supabase URL (প্রান্তিক /rest/v1/ কেটে বাদ দেওয়া হয়েছে)
+        const SUPABASE_URL = 'https://ovvcsijkueiygocuqayk.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_TikTBwrx9MXP8vgKoDvHeA_gBODwnfy';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('registrationForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successModal = document.getElementById('successModal');
+        const modalGreetingText = document.getElementById('modalGreetingText');
+
+        // ১. কলেজ সিলেক্ট করলে অটোমেটিক জেন্ডার সেট হওয়ার লজিক
+        function autoSelectGender() {
+            const college = document.getElementById('collegeName').value;
+            const genderSelect = document.getElementById('gender');
+
+            if (college === 'Notre Dame College' || college === 'St. Joseph Higher Secondary School') {
+                genderSelect.value = 'Male';
+            } else if (college === 'Holy Cross College') {
+                genderSelect.value = 'Female';
+            }
+        }
+
+        // ২. ফর্ম সাবমিশন ও ওয়াটসঅ্যাপ নাম্বার ভ্যালিডেশন
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('fullName').value.trim();
+            const collegeName = document.getElementById('collegeName').value;
+            const whatsapp = document.getElementById('whatsapp').value.trim();
+            const gender = document.getElementById('gender').value;
+            const phoneError = document.getElementById('phoneError');
+
+            // ০১ দিয়ে শুরু এবং ঠিক ১১ ডিজিট চেক (Regex)
+            const bdPhoneRegex = /^01[3-9][0-9]{8}$/;
+            if (!bdPhoneRegex.test(whatsapp)) {
+                phoneError.classList.remove('hidden');
+                return;
+            } else {
+                phoneError.classList.add('hidden');
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'তথ্য পাঠানো হচ্ছে...';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('registrations')
+                    .insert([{ full_name: fullName, college_name: collegeName, whatsapp: whatsapp, gender: gender }]);
+
+                if (error) throw error;
+
+                modalGreetingText.innerHTML = `
+                    <p class="font-semibold text-cyan-400 mb-1">কাজিম ভাইয়ের পক্ষ থেকে শুভেচ্ছা বার্তা 🌟</p>
+                    <p class="text-slate-200">স্বাগতম <strong>${fullName}</strong>! খুব শীঘ্রই আমাদের অফিস থেকে তোমার সাথে যোগাযোগ করা হবে। তখন তুমি একদম ফ্রি তে প্রোগ্রামটা ইউজ করতে পারবা।</p>
+                    <div class="border-t border-slate-800 pt-3 mt-3 text-xs text-slate-400 space-y-1">
+                        <p>📞 কোনো টেকনিক্যাল প্রয়োজনে বা কোনো প্রবলেমে কল দিতে পারো: <span class="text-cyan-300 font-mono font-semibold">09638183029</span></p>
+                        <p>📧 ইমেইল: <span class="text-cyan-300 font-mono font-semibold">kazimnahian@proton.me</span></p>
+                    </div>
+                `;
+                
+                successModal.classList.remove('hidden');
+                form.reset();
+            } catch (err) {
+                alert('তথ্য পাঠাতে সমস্যা হয়েছে: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ফ্রি এক্সেস সংগ্রহ করো';
+            }
+        });
+
+        function closeModal() {
+            successModal.classList.add('hidden');
+        }
+
+        // অ্যাডমিন প্যানেল লজিক (Password: ss43)
+        function openAdminAuth() {
+            document.getElementById('adminAuthView').classList.remove('hidden');
+            document.getElementById('adminDataView').classList.add('hidden');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        async function verifyAdmin() {
+            const pass = document.getElementById('adminPassword').value;
+            if (pass === 'ss43') {
+                document.getElementById('adminAuthView').classList.add('hidden');
+                document.getElementById('adminDataView').classList.remove('hidden');
+                document.getElementById('adminDataView').classList.add('flex');
+                fetchUsersData();
+            } else {
+                alert('ভুল পাসওয়ার্ড!');
+            }
+        }
+
+        async function fetchUsersData() {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">ডাটা লোড হচ্ছে...</td></tr>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('registrations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                document.getElementById('userCount').textContent = data.length;
+                tableBody.innerHTML = '';
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">কোনো ইউজার নিবন্ধিত হয়নি।</td></tr>';
+                    return;
+                }
+
+                data.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-slate-900/50 transition-colors';
+                    row.innerHTML = `
+                        <td class="p-3 font-medium text-white">${escapeHtml(user.full_name)}</td>
+                        <td class="p-3 text-cyan-300">${escapeHtml(user.college_name)}</td>
+                        <td class="p-3 font-mono text-indigo-300">${escapeHtml(user.whatsapp)}</td>
+                        <td class="p-3">${escapeHtml(user.gender)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">ডাটা লোড করতে সমস্যা: ${err.message}</td></tr>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            return String(text || '').replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        // অ্যানিমেটেড ক্যানভাস পার্টিকেল ব্যাকগ্রাউন্ড
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        for (let i = 0; i < 40; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1.5 + 0.5,
+                vy: -Math.random() * 0.3 - 0.1
+            });
+        }
+
+        function animateBg() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f2fe';
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                p.y += p.vy;
+                if (p.y < 0) p.y = canvas.height;
+            });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+    </script>
+</body>
+</html>
